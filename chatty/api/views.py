@@ -15,6 +15,21 @@ class ChatroomUserViewSet(viewsets.ModelViewSet):
     queryset = ChatroomUser.objects.all()
     serializer_class = ChatroomUserSerializer
 
+    @detail_route(methods=['get'])
+    def get_messages(self, request, pk):
+        chatroom_user = self.get_object()
+        last_message_time = request.GET.get('last_message_time')
+        member_chatrooms = Chatroom.objects.filter(members=chatroom_user)
+        chatroom_messages = ChatroomMessage.objects.filter(
+            room__in=member_chatrooms)
+        if last_message_time:
+            chatroom_messages = chatroom_messages.filter(
+                created_at__gt=last_message_time)
+        else:
+            chatroom_messages = chatroom_messages.none()
+        data = ChatroomMessageSerializer(chatroom_messages, many=True).data
+        return Response(data)
+
 
 class ChatroomViewSet(viewsets.ModelViewSet):
 
@@ -80,6 +95,8 @@ class ChatroomViewSet(viewsets.ModelViewSet):
         if last_message_time:
             chatroom_messages = chatroom_messages.filter(
                 created_at__gt=last_message_time)
+        else:
+            chatroom_messages = chatroom_messages.none()
 
         data = ChatroomMessageSerializer(chatroom_messages, many=True).data
         return Response(data)
